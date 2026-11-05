@@ -1,0 +1,15 @@
+<Addin Type="Standard">
+  <ClassId>{9ade277e-e5bf-4a79-8aa0-aae1d658ec18}</ClassId>
+  <ClientId>{9ade277e-e5bf-4a79-8aa0-aae1d658ec18}</ClientId>
+  <DisplayName>STEP Export</DisplayName>
+  <Description>Export assemblies and parts to STEP files in the folder of the open document, named with the order number and the date.</Description>
+  <Assembly>StepExport.dll</Assembly>
+  <LoadOnStartUp>1</LoadOnStartUp>
+  <UserUnloadable>1</UserUnloadable>
+  <Hidden>0</Hidden>
+  <SupportedSoftwareVersionGreaterThan>28..</SupportedSoftwareVersionGreaterThan>
+  <SupportedSoftwareVersionLessThan>30..</SupportedSoftwareVersionLessThan>
+  <DataVersion>1</DataVersion>
+  <UserInterfaceVersion>1</UserInterfaceVersion>
+  <LoadBehavior>1</LoadBehavior>
+</Addin>
