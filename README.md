@@ -9,7 +9,7 @@ with a file name and folder made from your iProperties and the date.
 ## Install
 
 Close Inventor and run `Exporter-Setup-<version>.exe` from
-[Releases](https://github.com/JanTrueno/Inventor-STEP-Export/releases). It installs for the current user, with no
+[Releases](https://github.com/JanTrueno/Inventor-Exporter/releases). It installs for the current user, with no
 admin rights needed. The **Exporter** button is on the Assemble tab of an assembly, the 3D Model and Sheet Metal tabs of a
 part, and the Place Views tab of a drawing.
 
