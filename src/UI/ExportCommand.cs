@@ -13,14 +13,14 @@ using Timer = System.Windows.Forms.Timer;
 namespace StepExport.UI
 {
     /// <summary>
-    /// The "STEP" command: a docked panel with the file name options, the folder (the folder of the open document at first) and the
+    /// The "Exporter" command: a docked panel with the file name options, the folder (the folder of the open document at first) and the
     /// model tree of the open assembly, part or drawing. Every ticked model is exported to
     /// &lt;folder&gt;\&lt;name&gt;_&lt;order&gt;_&lt;date&gt;.stp. In an assembly or part the open document is ticked at
     /// first; in a drawing the assembly of sheet 1. The panel stays open for more exports and follows the active document.
     /// </summary>
     internal sealed class ExportCommand
     {
-        private const string Title = "STEP Export";
+        private const string Title = "Exporter";
         private static ExportCommand _active;
 
         private readonly Inventor.Application _app;
@@ -69,9 +69,9 @@ namespace StepExport.UI
             try { cmd.Run(doc); }
             catch (Exception ex)
             {
-                Log.Write("Starting STEP Export failed: " + ex);
+                Log.Write("Starting Exporter failed: " + ex);
                 cmd.Finish();
-                return "STEP Export could not start: " + ex.Message;
+                return "Exporter could not start: " + ex.Message;
             }
             return null;
         }

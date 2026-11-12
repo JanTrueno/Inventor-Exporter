@@ -77,7 +77,7 @@ namespace StepExport.Core
                 _w.WriteLine("HEADER;");
                 _w.WriteLine("FILE_DESCRIPTION(('ViewDefinition [ReferenceView_V1.2]'),'2;1');");
                 _w.WriteLine("FILE_NAME(" + S(Path.GetFileName(path)) + "," + S(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss", Inv)) +
-                             ",(''),(''),'STEP Export for Inventor','Autodesk Inventor 2025','');");
+                             ",(''),(''),'Exporter for Inventor','Autodesk Inventor 2025','');");
                 _w.WriteLine("FILE_SCHEMA(('IFC4'));");
                 _w.WriteLine("ENDSEC;");
                 _w.WriteLine("DATA;");

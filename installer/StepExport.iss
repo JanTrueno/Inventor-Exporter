@@ -1,4 +1,4 @@
-﻿; Inno Setup script for the STEP Export add-in (Inventor 2025).
+﻿; Inno Setup script for the Exporter add-in (Inventor 2025).
 ; Build with build-installer.ps1, which compiles the add-in first and passes the version.
 
 #ifndef AppVersion
@@ -8,7 +8,7 @@
 
 [Setup]
 AppId={{032ac4ce-cc65-473e-8891-7a6ba3b85bb0}
-AppName=STEP Export for Inventor
+AppName=Exporter for Inventor
 AppVersion={#AppVersion}
 AppPublisher=JanTrueno
 DefaultDirName={userappdata}\Autodesk\ApplicationPlugins\StepExport.bundle
@@ -20,12 +20,12 @@ ArchitecturesInstallIn64BitMode=x64compatible
 LicenseFile=..\LICENSE
 SetupIconFile=StepExport.ico
 UninstallDisplayIcon={app}\StepExport.ico
-UninstallDisplayName=STEP Export for Inventor 2025
+UninstallDisplayName=Exporter for Inventor 2025
 WizardStyle=modern
 WizardImageFile=wizard-large.bmp
 WizardSmallImageFile=wizard-small.bmp
 OutputDir=..\dist
-OutputBaseFilename=StepExport-Setup-{#AppVersion}
+OutputBaseFilename=Exporter-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 CloseApplications=no

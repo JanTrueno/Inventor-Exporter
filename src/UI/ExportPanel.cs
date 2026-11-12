@@ -9,7 +9,7 @@ using StepExport.Core;
 namespace StepExport.UI
 {
     /// <summary>
-    /// The STEP Export panel, built like Inventor's own property panels (and the other export panels): section bars
+    /// The Exporter panel, built like Inventor's own property panels (and the other export panels): section bars
     /// with chevrons, flat fields, iProperty lists for the file name and the folder name, tick boxes for the formats,
     /// the model tree to tick what is exported, and Export / Close at the bottom. It only shows and collects values; reading the model and
     /// exporting are done by <see cref="ExportCommand"/>.

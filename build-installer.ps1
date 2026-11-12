@@ -1,4 +1,4 @@
-﻿# Builds the add-in and packs it into dist\StepExport-Setup-<version>.exe with Inno Setup 6.
+﻿# Builds the add-in and packs it into dist\Exporter-Setup-<version>.exe with Inno Setup 6.
 # Usage:  powershell -ExecutionPolicy Bypass -File build-installer.ps1 [-Version 1.0.0]
 param([string]$Version)
 
@@ -21,5 +21,5 @@ if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
 & $iscc /Q "/DAppVersion=$Version" (Join-Path $root 'installer\StepExport.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Installer build failed.' }
-"Built " + (Join-Path $root "dist\StepExport-Setup-$Version.exe")
+"Built " + (Join-Path $root "dist\Exporter-Setup-$Version.exe")
 

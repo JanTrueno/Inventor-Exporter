@@ -1,7 +1,7 @@
 <Addin Type="Standard">
   <ClassId>{9ade277e-e5bf-4a79-8aa0-aae1d658ec18}</ClassId>
   <ClientId>{9ade277e-e5bf-4a79-8aa0-aae1d658ec18}</ClientId>
-  <DisplayName>STEP Export</DisplayName>
+  <DisplayName>Exporter</DisplayName>
   <Description>Export assemblies and parts to STEP, IFC, glTF, OBJ, STL and other files in the folder of the open document, named with the order number and the date.</Description>
   <Assembly>StepExport.dll</Assembly>
   <LoadOnStartUp>1</LoadOnStartUp>

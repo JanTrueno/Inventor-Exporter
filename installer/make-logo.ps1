@@ -1,4 +1,4 @@
-# Draws the STEP Export logo (a blue isometric cube, in the blue of the other add-ins, #0078D7) as a 512 px PNG,
+# Draws the Exporter logo (a blue isometric cube, in the blue of the other add-ins, #0078D7) as a 512 px PNG,
 # to src\Assets\step.png (ribbon icon) and installer\logo.png (installer pictures; run make-images.ps1 after it).
 Add-Type -AssemblyName System.Drawing
 $here = $PSScriptRoot

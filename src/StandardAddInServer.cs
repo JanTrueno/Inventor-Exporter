@@ -7,7 +7,7 @@ using StepExport.UI;
 namespace StepExport
 {
     /// <summary>
-    /// Inventor add-in entry point: one "STEP" button on the 3D Model and Sheet Metal tabs of the part ribbon, the Place Views tab of the drawing ribbon and
+    /// Inventor add-in entry point: one "Exporter" button on the 3D Model and Sheet Metal tabs of the part ribbon, the Place Views tab of the drawing ribbon and
     /// the Assemble tab of the assembly ribbon. It opens a panel docked in Inventor's left-hand area to tick parts and
     /// assemblies in a model tree and export them to STEP, IFC and the other 3D formats Inventor writes (and the drawing to PDF, DWG, DXF), in the folder of the open document.
     /// </summary>
@@ -32,9 +32,9 @@ namespace StepExport
             UI.Theme.Detect(_app);   // picks the light or dark icon set before anything is drawn
 
             _button = _app.CommandManager.ControlDefinitions.AddButtonDefinition(
-                "STEP", "StepExport.Start", CommandTypesEnum.kFileOperationsCmdType, clientGuid,
-                "Export assemblies and parts to STEP",
-                "STEP Export\nTick assemblies and parts in a model tree and export them to STEP, IFC, glTF, OBJ, STL, DWG and more in the folder of the open document, named with the order number and the date. In a drawing the assembly of sheet 1 is ticked.",
+                "Exporter", "StepExport.Start", CommandTypesEnum.kFileOperationsCmdType, clientGuid,
+                "Export assemblies and parts to STEP, IFC, 3D DWG and more",
+                "Exporter\nTick assemblies and parts in a model tree and export them to STEP, IFC, glTF, OBJ, STL, 3D DWG and more in the folder of the open document, named with the order number and the date. In a drawing the assembly of sheet 1 is ticked.",
                 Icons.CreateStep(16), Icons.CreateStep(32), ButtonDisplayEnum.kDisplayTextInLearningMode);
             _button.OnExecute += OnExecute;
 
@@ -80,7 +80,7 @@ namespace StepExport
                 RibbonTab tab = _app.UserInterfaceManager.Ribbons[ribbonName].RibbonTabs[tabName];
                 RibbonPanel panel;
                 try { panel = tab.RibbonPanels[PanelName]; }
-                catch { panel = tab.RibbonPanels.Add("STEP", PanelName, "{" + ClientId + "}", "", false); }
+                catch { panel = tab.RibbonPanels.Add("Exporter", PanelName, "{" + ClientId + "}", "", false); }
                 try { panel.CommandControls.AddButton(_button, true, true, "", false); } catch { /* already added */ }
             }
             catch (Exception ex) { Core.Log.Write("Adding the button to " + ribbonName + "/" + tabName + " failed: " + ex.Message); }
@@ -92,7 +92,7 @@ namespace StepExport
         {
             string error = ExportCommand.Start(_app);
             if (error != null)
-                MessageBox.Show(new InventorWindow(_app.MainFrameHWND), error, "STEP Export", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(new InventorWindow(_app.MainFrameHWND), error, "Exporter", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

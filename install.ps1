@@ -28,4 +28,4 @@ foreach ($f in 'StepExport.dll', 'StepExport.pdb', 'StepExport.deps.json') {
     Copy-Item (Join-Path $out $f) $target -Force
 }
 "Installed to $bundle"
-"Start Inventor 2025; the STEP button is on the Assemble tab of an assembly, the 3D Model and Sheet Metal tabs of a part and the Place Views tab of a drawing."
+"Start Inventor 2025; the Exporter button is on the Assemble tab of an assembly, the 3D Model and Sheet Metal tabs of a part and the Place Views tab of a drawing."

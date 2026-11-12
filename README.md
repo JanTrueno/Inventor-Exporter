@@ -1,16 +1,16 @@
-# Inventor STEP Export
+# Inventor Exporter
 
 Mass export for Autodesk Inventor 2025: STEP, IFC and every other 3D format Inventor writes. Tick the assemblies and
 parts you want in a model tree, tick the formats, click **Export**, and each model becomes its own file per format,
 with a file name and folder made from your iProperties and the date.
 
-<img src="docs/panel.png" alt="The STEP Export panel docked in Inventor" width="390" align="right">
+<img src="docs/panel.png" alt="The Exporter panel docked in Inventor" width="390" align="right">
 
 ## Install
 
-Close Inventor and run `StepExport-Setup-<version>.exe` from
+Close Inventor and run `Exporter-Setup-<version>.exe` from
 [Releases](https://github.com/JanTrueno/Inventor-STEP-Export/releases). It installs for the current user, with no
-admin rights needed. The **STEP** button is on the Assemble tab of an assembly, the 3D Model and Sheet Metal tabs of a
+admin rights needed. The **Exporter** button is on the Assemble tab of an assembly, the 3D Model and Sheet Metal tabs of a
 part, and the Place Views tab of a drawing.
 
 ## Use
@@ -19,7 +19,7 @@ part, and the Place Views tab of a drawing.
   subassemblies too. **Shift**-click ticks every row from the last row you clicked, and **Ctrl+A** ticks all rows.
   Each ticked model gets its own file per format (an assembly is exported whole), and a file used more than once
   is exported once.
-- **Formats**: STEP, IFC, glTF (.glb), OBJ, STL, DWG (3D), IGES, SAT, Parasolid x_t/x_b, JT, USDZ, DWF, CATIA V5,
+- **Formats**: STEP, IFC, glTF (.glb), OBJ, STL, DWG (3D solids), IGES, SAT, Parasolid x_t/x_b, JT, USDZ, DWF, CATIA V5,
   Granite, Pro/E Neutral, SMT and QIF (parts), through Inventor's own translators. In a drawing, the drawing itself
   can also go to PDF, DWG, DXF (one file per sheet), DWF or DWFx.
 - **IFC** (IFC4, mm) is written by the add-in, since Inventor's IFC translator only imports. It keeps the assembly

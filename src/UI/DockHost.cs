@@ -39,7 +39,7 @@ namespace StepExport.UI
 
             _host = new HostControl();
             _ = _host.Handle; // make sure the native window exists before Inventor adopts it
-            _window = app.UserInterfaceManager.DockableWindows.Add(clientGuid, WindowName, "STEP Export");
+            _window = app.UserInterfaceManager.DockableWindows.Add(clientGuid, WindowName, "Exporter");
             _window.ShowVisibilityCheckBox = false;
             _window.DisableCloseButton = true;
             _window.SetMinimumSize(250, 300);
@@ -93,7 +93,7 @@ namespace StepExport.UI
         private static readonly Timer _front = new Timer { Interval = 250 };
 
         /// <summary>
-        /// Brings the STEP Export tab to the front a moment from now. Inventor switches its left-hand area to the Model
+        /// Brings the Exporter tab to the front a moment from now. Inventor switches its left-hand area to the Model
         /// browser when a part is opened or an edit starts or ends, and has no call to pick a tab, so the window is
         /// hidden and shown again (which Inventor does put in front); <see cref="Closed"/> is not raised for it.
         /// </summary>
