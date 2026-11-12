@@ -49,6 +49,6 @@ logged in `%LOCALAPPDATA%\StepExport\log.txt`.
 ## Build
 
 Requires the .NET 8 SDK. With Inventor closed, `install.ps1` builds and installs the add-in (`-Remove` uninstalls
-it). `build-installer.ps1` (Inno Setup 6) writes `dist\StepExport-Setup-<version>.exe`.
+it). `build-installer.ps1` (Inno Setup 6) writes `dist\Exporter-Setup-<version>.exe`.
 
 License: GPL-3.0. Third-party icons: see `THIRD-PARTY-NOTICES.txt`.
