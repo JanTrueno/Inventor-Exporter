@@ -141,6 +141,7 @@ namespace StepExport.UI
             }
             tree.EndUpdate();
             _panel.FitTree();
+            _panel.ShowDrawingFormats(doc is DrawingDocument);
 
             try { _highlight = doc is AssemblyDocument a ? a.CreateHighlightSet() : null; } catch { _highlight = null; }
             if (_highlight != null) _highlight.Color = _app.TransientObjects.CreateColor(255, 140, 0);
@@ -385,13 +386,22 @@ namespace StepExport.UI
 
         private static PropertySpec Spec(PropertyList.Row row) => new PropertySpec { Name = row.Name, Before = row.Before.Text, After = row.After.Text };
 
-        private string StepName(Document doc)
+        /// <summary>The file name without extension: the model name, the file name iProperties and the date.</summary>
+        private string BaseName(Document doc)
         {
             var parts = new List<string> { Exporter.ModelName(doc) };
             foreach (PropertyList.Row row in _panel.NameList.Rows) parts.Add(FileNamer.Part(Spec(row), ValueFor(row, doc)));
             if (_settings.AddDate) parts.Add(FileNamer.DateText(_settings.DateFormat, DateTime.Today));
-            return FileNamer.Join(parts, _settings.Separator) + FileNamer.Extension(_settings);
+            return FileNamer.Join(parts, _settings.Separator);
         }
+
+        private string FileName(Document doc, ExportFormat format) => BaseName(doc) + format.ExtensionFor(doc, _settings);
+
+        private List<ExportFormat> ModelFormats() =>
+            _settings.ModelFormats.Select(ExportFormat.Model).Where(f => f != null).ToList();
+
+        private List<ExportFormat> DrawingFormats() =>
+            _top is DrawingDocument ? _settings.DrawingFormats.Select(ExportFormat.Drawing).Where(f => f != null).ToList() : new List<ExportFormat>();
 
         /// <summary>The name of the folder made from the folder iProperties and the date; "" when there is nothing to name it.</summary>
         private string FolderName()
@@ -445,10 +455,24 @@ namespace StepExport.UI
                               ?? ModelsOf(_top).FirstOrDefault();
             string file = "";
             try { file = sample?.FullFileName; } catch { }
-            _panel.SetNameHint(string.IsNullOrEmpty(file) ? "" : StepName(sample) + EmptyNote(), false);
+            ExportFormat first = ModelFormats().FirstOrDefault();
+            _panel.SetNameHint(string.IsNullOrEmpty(file) ? "" : BaseName(sample) + (first != null ? first.ExtensionFor(sample, _settings) : "") + EmptyNote(), false);
+            UpdateFormatHint();
         }
 
-        /// <summary>Shows the example name and where the export goes; marks the models whose STEP file is there already.</summary>
+        /// <summary>What the formats will give: the number of files, or why nothing goes out.</summary>
+        private void UpdateFormatHint()
+        {
+            int models = ModelFormats().Count, drawing = DrawingFormats().Count;
+            if (models == 0 && drawing == 0) { _panel.SetFormatHint("Tick at least one format.", true); return; }
+            int files = _checked.Count * models + drawing;
+            string text = files + (files == 1 ? " file" : " files");
+            if (models > 0 && _checked.Count > 0) text += " (" + _checked.Count + (_checked.Count == 1 ? " model" : " models") + " × " + models + (drawing > 0 ? ", plus the drawing" : "") + ")";
+            else if (drawing > 0) text += " of the drawing";
+            _panel.SetFormatHint(text + ".", false);
+        }
+
+        /// <summary>Shows the example name and where the export goes; marks the models with a file in the folder already.</summary>
         private void Refresh()
         {
             string folder = TargetFolder();
@@ -475,7 +499,8 @@ namespace StepExport.UI
             string file = "";
             try { file = data.Doc.FullFileName; } catch { }
             if (string.IsNullOrEmpty(file)) return ("Not saved", false);
-            return _inFolder.Contains(StepName(data.Doc)) ? ("In folder", false) : ("", false);
+            string name = BaseName(data.Doc);
+            return ModelFormats().Any(f => f.CanWrite(data.Doc) && _inFolder.Contains(name + f.ExtensionFor(data.Doc, _settings))) ? ("In folder", false) : ("", false);
         }
 
         private void OnSettingsChanged()
@@ -495,23 +520,45 @@ namespace StepExport.UI
             _settings.Save();
 
             string folder = TargetFolder();
-            if (folder.Length == 0) { _panel.SetStatus("Choose a folder for the STEP files.", true); return; }
+            if (folder.Length == 0) { _panel.SetStatus("Choose a folder for the exported files.", true); return; }
+            List<ExportFormat> modelFormats = ModelFormats(), drawingFormats = DrawingFormats();
+            if (modelFormats.Count == 0 && drawingFormats.Count == 0) { _panel.SetStatus("Tick at least one format.", true); return; }
 
-            // what goes out: every ticked file once, saved, with a name not used by another ticked file
-            var jobs = new List<(string Key, Document Doc, string Name)>();
+            // what goes out: every ticked file once per format, saved, with a name not used by another ticked file
+            var jobs = new List<(string Key, Document Doc, string Name, ExportFormat Format)>();
             var skipped = new List<string>();
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string key in _checked)
+            if (modelFormats.Count > 0)
             {
-                if (!_docs.TryGetValue(key, out Document doc)) continue;
+                foreach (string key in _checked)
+                {
+                    if (!_docs.TryGetValue(key, out Document doc)) continue;
+                    string file = "";
+                    try { file = doc.FullFileName; } catch { }
+                    if (string.IsNullOrEmpty(file)) { skipped.Add(SafeName(doc) + ": not saved yet, so it has no file name."); continue; }
+                    PropertyList.Row unfilled = _panel.NameList.Rows.FirstOrDefault(r => FileNamer.IsPlaceholder(ValueFor(r, doc), _settings));
+                    if (unfilled != null) { skipped.Add(SafeName(doc) + ": " + unfilled.Name + " is not filled in."); continue; }
+                    foreach (ExportFormat format in modelFormats)
+                    {
+                        if (!format.CanWrite(doc)) { skipped.Add(SafeName(doc) + ": " + format.Label + " is not made from " + (doc is AssemblyDocument ? "assemblies." : "this kind of model.")); continue; }
+                        string name = FileName(doc, format);
+                        if (!names.Add(name)) { skipped.Add(name + ": another ticked model has the same name; it is exported once."); continue; }
+                        jobs.Add((key, doc, name, format));
+                    }
+                }
+            }
+            if (drawingFormats.Count > 0)
+            {
                 string file = "";
-                try { file = doc.FullFileName; } catch { }
-                if (string.IsNullOrEmpty(file)) { skipped.Add(SafeName(doc) + ": not saved yet, so it has no file name."); continue; }
-                string name = StepName(doc);
-                PropertyList.Row unfilled = _panel.NameList.Rows.FirstOrDefault(r => FileNamer.IsPlaceholder(ValueFor(r, doc), _settings));
-                if (unfilled != null) { skipped.Add(SafeName(doc) + ": " + unfilled.Name + " is not filled in."); continue; }
-                if (!names.Add(name)) { skipped.Add(name + ": another ticked model has the same name; it is exported once."); continue; }
-                jobs.Add((key, doc, name));
+                try { file = _top.FullFileName; } catch { }
+                if (string.IsNullOrEmpty(file)) skipped.Add(SafeName(_top) + ": the drawing is not saved yet, so it has no file name.");
+                else
+                    foreach (ExportFormat format in drawingFormats)
+                    {
+                        string name = FileName(_top, format);
+                        if (names.Add(name)) jobs.Add(("", _top, name, format));
+                        else skipped.Add(name + ": a model has the same name; the drawing is not written in " + format.Label + ".");
+                    }
             }
             if (jobs.Count == 0)
             {
@@ -519,7 +566,7 @@ namespace StepExport.UI
                 return;
             }
 
-            var existing = jobs.Where(j => File.Exists(Path.Combine(folder, j.Name))).ToList();
+            var existing = jobs.Where(j => File.Exists(JobPath(folder, j.Doc, j.Name, j.Format))).ToList();
             if (existing.Count > 0)
             {
                 string list = string.Join("\n", existing.Take(12).Select(j => "  " + j.Name)) + (existing.Count > 12 ? "\n  …" : "");
@@ -531,16 +578,11 @@ namespace StepExport.UI
                 {
                     foreach (var j in existing) skipped.Add(j.Name + ": kept the one in the folder.");
                     jobs = jobs.Except(existing).ToList();
-                    if (jobs.Count == 0) { _panel.SetStatus("Nothing exported: every STEP file is in the folder already.", false); return; }
+                    if (jobs.Count == 0) { _panel.SetStatus("Nothing exported: every file is in the folder already.", false); return; }
                 }
             }
 
-            Exporter exporter = Exporter.Create(_app);
-            if (exporter == null)
-            {
-                _panel.SetStatus("The STEP translator is not loaded (Tools > Add-Ins).", true);
-                return;
-            }
+            var exporter = new Exporter(_app, _settings);
 
             try { Directory.CreateDirectory(folder); }
             catch (Exception ex) { _panel.SetStatus("Could not make the folder " + folder + ": " + ex.Message, true); return; }
@@ -564,18 +606,19 @@ namespace StepExport.UI
                 for (int i = 0; i < jobs.Count && !_cancelled; i++)
                 {
                     var job = jobs[i];
-                    string path = Path.Combine(folder, job.Name);
+                    string path = JobPath(folder, job.Doc, job.Name, job.Format);
+                    try { Directory.CreateDirectory(Path.GetDirectoryName(path)); } catch { }
                     Report(progress, (i + 1) + " / " + jobs.Count + "  " + job.Name);
                     try
                     {
-                        exporter.Export(job.Doc, path, _settings.Protocol);
+                        exporter.Export(job.Doc, path, job.Format);
                         done++;
-                        _results[job.Key] = ("Exported", true);
+                        if (job.Key.Length > 0 && !(_results.TryGetValue(job.Key, out var r) && r.Text == "Failed")) _results[job.Key] = ("Exported", true);
                     }
                     catch (Exception ex)
                     {
                         failures.Add(job.Name + ": " + ex.Message);
-                        _results[job.Key] = ("Failed", false);
+                        if (job.Key.Length > 0) _results[job.Key] = ("Failed", false);
                         Log.Write("Exporting " + path + " failed: " + ex);
                     }
                     try { progress?.UpdateProgress(); } catch { }
@@ -593,7 +636,7 @@ namespace StepExport.UI
 
             Refresh();
             var summary = new List<string>();
-            summary.Add(done + (done == 1 ? " STEP file" : " STEP files") + " written to " + folder + ".");
+            summary.Add(done + (done == 1 ? " file" : " files") + " written to " + folder + ".");
             if (_cancelled) summary.Add("The export was cancelled.");
             if (failures.Count > 0) summary.Add(failures.Count + " failed.");
             if (skipped.Count > 0) summary.Add(skipped.Count + " skipped.");
@@ -611,6 +654,20 @@ namespace StepExport.UI
             {
                 try { Process.Start("explorer.exe", "\"" + folder + "\""); } catch (Exception ex) { Log.Write("Opening the folder failed: " + ex.Message); }
             }
+        }
+
+        /// <summary>
+        /// Where one file goes: in the folder, or for Granite and Pro/E Neutral of an assembly (a file per part next to
+        /// the assembly file) in a folder of its own, "&lt;name&gt; (&lt;format&gt;)".
+        /// </summary>
+        private static string JobPath(string folder, Document doc, string name, ExportFormat format)
+        {
+            if (format.PartFiles && doc is AssemblyDocument)
+            {
+                string own = Path.GetFileNameWithoutExtension(name) + " (" + format.Label.Replace("/", "-").Replace(" (.g)", "") + ")";
+                return Path.Combine(folder, own, name);
+            }
+            return Path.Combine(folder, name);
         }
 
         private void OnProgressCancel() => _cancelled = true;

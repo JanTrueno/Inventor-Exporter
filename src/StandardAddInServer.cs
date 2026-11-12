@@ -9,7 +9,7 @@ namespace StepExport
     /// <summary>
     /// Inventor add-in entry point: one "STEP" button on the 3D Model and Sheet Metal tabs of the part ribbon, the Place Views tab of the drawing ribbon and
     /// the Assemble tab of the assembly ribbon. It opens a panel docked in Inventor's left-hand area to tick parts and
-    /// assemblies in a model tree and export them to STEP files in the folder of the open document.
+    /// assemblies in a model tree and export them to STEP, IFC and the other 3D formats Inventor writes (and the drawing to PDF, DWG, DXF), in the folder of the open document.
     /// </summary>
     [ComVisible(true)]
     [Guid(ClientId)]
@@ -34,7 +34,7 @@ namespace StepExport
             _button = _app.CommandManager.ControlDefinitions.AddButtonDefinition(
                 "STEP", "StepExport.Start", CommandTypesEnum.kFileOperationsCmdType, clientGuid,
                 "Export assemblies and parts to STEP",
-                "STEP Export\nTick assemblies and parts in a model tree and export them to STEP files in the folder of the open document, named with the order number and the date. In a drawing the assembly of sheet 1 is ticked.",
+                "STEP Export\nTick assemblies and parts in a model tree and export them to STEP, IFC, glTF, OBJ, STL, DWG and more in the folder of the open document, named with the order number and the date. In a drawing the assembly of sheet 1 is ticked.",
                 Icons.CreateStep(16), Icons.CreateStep(32), ButtonDisplayEnum.kDisplayTextInLearningMode);
             _button.OnExecute += OnExecute;
 

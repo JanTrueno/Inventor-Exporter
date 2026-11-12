@@ -25,7 +25,7 @@ namespace StepExport.Core
         /// <summary>The iProperties after the model name in the file name, in this order.</summary>
         public List<PropertySpec> NameProperties { get; set; } = new List<PropertySpec>();
 
-        /// <summary>The iProperties that make the name of the folder the STEP files go in (inside the document folder), in this order.</summary>
+        /// <summary>The iProperties that make the name of the folder the exported files go in (inside the document folder), in this order.</summary>
         public List<PropertySpec> FolderProperties { get; set; } = new List<PropertySpec>
         {
             new PropertySpec { Name = "ordernummer", Before = "Tekeningenpakket-STP (", After = ")" }
@@ -59,6 +59,21 @@ namespace StepExport.Core
         /// <summary>The file extension, .stp or .step.</summary>
         public string Extension { get; set; } = ".stp";
 
+        /// <summary>The formats every ticked part or assembly is written in (keys of <see cref="ExportFormat.Models"/>).</summary>
+        public List<string> ModelFormats { get; set; } = new List<string> { "step" };
+
+        /// <summary>The formats the open drawing itself is written in (keys of <see cref="ExportFormat.Drawings"/>).</summary>
+        public List<string> DrawingFormats { get; set; } = new List<string>();
+
+        /// <summary>IFC: components whose name holds one of these words (comma separated) are left out.</summary>
+        public string IfcLeaveOut { get; set; } = "vloerplan";
+
+        /// <summary>IFC: the largest distance between the mesh and the real surface, in mm.</summary>
+        public double IfcMeshMm { get; set; } = 0.1;
+
+        /// <summary>IFC: the name of the property set with part number, profile, material, length and weight.</summary>
+        public string IfcPropertySet { get; set; } = "Onderdeel";
+
         /// <summary>Opens the folder in Explorer after an export without errors.</summary>
         public bool OpenFolder { get; set; } = true;
 
@@ -79,6 +94,8 @@ namespace StepExport.Core
             s = s ?? new ExportSettings();
             if (s.NameProperties == null) s.NameProperties = new List<PropertySpec>();
             if (s.FolderProperties == null) s.FolderProperties = new List<PropertySpec>();
+            if (s.ModelFormats == null) s.ModelFormats = new List<string> { "step" };
+            if (s.DrawingFormats == null) s.DrawingFormats = new List<string>();
             return s;
         }
 

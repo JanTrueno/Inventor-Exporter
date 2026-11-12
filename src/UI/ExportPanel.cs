@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
+using System.Linq;
 using System.Windows.Forms;
 using StepExport.Core;
 
@@ -7,8 +10,8 @@ namespace StepExport.UI
 {
     /// <summary>
     /// The STEP Export panel, built like Inventor's own property panels (and the other export panels): section bars
-    /// with chevrons, flat fields, iProperty lists for the file name and the folder name, the model tree to tick what
-    /// is exported, and Export / Close at the bottom. It only shows and collects values; reading the model and
+    /// with chevrons, flat fields, iProperty lists for the file name and the folder name, tick boxes for the formats,
+    /// the model tree to tick what is exported, and Export / Close at the bottom. It only shows and collects values; reading the model and
     /// exporting are done by <see cref="ExportCommand"/>.
     /// </summary>
     internal sealed class ExportPanel : UserControl
@@ -35,8 +38,16 @@ namespace StepExport.UI
         public readonly ModelTree Tree;
         private readonly Label _count = new Label { AutoSize = true, Tag = "keep" };
 
+        // formats
+        private readonly List<(ExportFormat Format, CheckBox Box)> _modelBoxes = new List<(ExportFormat, CheckBox)>();
+        private readonly List<(ExportFormat Format, CheckBox Box)> _drawingBoxes = new List<(ExportFormat, CheckBox)>();
+        private Label _drawingTitle;
+        private TableLayoutPanel _drawingGrid;
+        private readonly Label _formatHint = new Label { AutoSize = false, Height = 34, Dock = DockStyle.Fill, Tag = "keep" };
+
         // settings
         private readonly FieldBox _separator, _dateFormat, _folderSeparator, _folderDateFormat, _placeholder, _protocol, _extension;
+        private readonly FieldBox _ifcLeaveOut, _ifcMesh, _ifcSet;
         private readonly CheckBox _openFolder = new CheckBox { Text = "Open the folder after the export", AutoSize = true };
 
         private readonly Label _status = new Label { AutoSize = false, Dock = DockStyle.Bottom, Height = 48, Padding = new Padding(8, 2, 8, 0), Tag = "keep", Visible = false };
@@ -70,12 +81,17 @@ namespace StepExport.UI
             _placeholder = new FieldBox(theme);
             _protocol = new FieldBox(theme);
             _extension = new FieldBox(theme);
+            _ifcLeaveOut = new FieldBox(theme);
+            _ifcMesh = new FieldBox(theme);
+            _ifcSet = new FieldBox(theme);
+            foreach (ExportFormat f in ExportFormat.Models) _modelBoxes.Add((f, new CheckBox { Text = f.Label, AutoSize = true }));
+            foreach (ExportFormat f in ExportFormat.Drawings) _drawingBoxes.Add((f, new CheckBox { Text = f.Label, AutoSize = true }));
             _export = new InventorButton(theme, "Export", true);
             _close = new InventorButton(theme, "Close", false);
 
             BuildLayout();
             theme.Apply(this);
-            _nameHint.ForeColor = _folderHint.ForeColor = _count.ForeColor = theme.Dim;
+            _nameHint.ForeColor = _folderHint.ForeColor = _count.ForeColor = _formatHint.ForeColor = theme.Dim;
             WireEvents();
         }
 
@@ -92,6 +108,20 @@ namespace StepExport.UI
         {
             _folderHint.Text = text ?? "";
             _folderHint.ForeColor = isError ? ErrorColor : _theme.Dim;
+        }
+
+        // ----- formats --------------------------------------------------------------------------------------------
+
+        /// <summary>The drawing formats are shown only while a drawing is open.</summary>
+        public void ShowDrawingFormats(bool visible)
+        {
+            _drawingTitle.Visible = _drawingGrid.Visible = visible;
+        }
+
+        public void SetFormatHint(string text, bool isError)
+        {
+            _formatHint.Text = text ?? "";
+            _formatHint.ForeColor = isError ? ErrorColor : _theme.Dim;
         }
 
         // ----- folder ---------------------------------------------------------------------------------------------
@@ -133,6 +163,11 @@ namespace StepExport.UI
             _protocol.Text = ProtocolName(s.Protocol);
             _extension.Text = s.Extension ?? ".stp";
             _openFolder.Checked = s.OpenFolder;
+            foreach (var (f, box) in _modelBoxes) box.Checked = s.ModelFormats.Contains(f.Key, StringComparer.OrdinalIgnoreCase);
+            foreach (var (f, box) in _drawingBoxes) box.Checked = s.DrawingFormats.Contains(f.Key, StringComparer.OrdinalIgnoreCase);
+            _ifcLeaveOut.Text = s.IfcLeaveOut ?? "";
+            _ifcMesh.Text = s.IfcMeshMm.ToString("0.###", CultureInfo.InvariantCulture);
+            _ifcSet.Text = s.IfcPropertySet ?? "";
             _loading = false;
         }
 
@@ -162,6 +197,14 @@ namespace StepExport.UI
             if (extOk) s.Extension = "." + ext; else error = error ?? "The extension is .stp or .step.";
 
             s.OpenFolder = _openFolder.Checked;
+            s.ModelFormats = _modelBoxes.Where(x => x.Box.Checked).Select(x => x.Format.Key).ToList();
+            s.DrawingFormats = _drawingBoxes.Where(x => x.Box.Checked).Select(x => x.Format.Key).ToList();
+
+            s.IfcLeaveOut = _ifcLeaveOut.Text.Trim();
+            bool meshOk = double.TryParse(_ifcMesh.Text.Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double mesh) && mesh >= 0.001 && mesh <= 50;
+            _ifcMesh.Invalid = !meshOk;
+            if (meshOk) s.IfcMeshMm = mesh; else error = error ?? "The IFC mesh accuracy is a number of mm, for example 0.1.";
+            s.IfcPropertySet = _ifcSet.Text.Trim().Length > 0 ? _ifcSet.Text.Trim() : "Onderdeel";
             return error;
         }
 
@@ -210,8 +253,9 @@ namespace StepExport.UI
             NameList.SetEnabled(!busy);
             FolderList.SetEnabled(!busy);
             foreach (Control c in new Control[] { _addDate, _folderDate, _folderSeparator, _folderDateFormat, _folder, _browse, _reset, Tree, _separator, _dateFormat, _placeholder,
-                                                  _protocol, _extension, _openFolder, _export, _close })
+                                                  _protocol, _extension, _ifcLeaveOut, _ifcMesh, _ifcSet, _openFolder, _export, _close })
                 c.Enabled = !busy;
+            foreach (var x in _modelBoxes.Concat(_drawingBoxes)) x.Box.Enabled = !busy;
         }
 
         private static readonly Color ErrorColor = Color.FromArgb(240, 110, 100);
@@ -223,6 +267,7 @@ namespace StepExport.UI
             var stack = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 1, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Margin = Padding.Empty };
             stack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             AddSection(stack, "Folder", FolderTable(), true);
+            AddSection(stack, "Formats", FormatsTable(), true);
             AddSection(stack, "File name", NameTable(), false);
             AddSection(stack, "Models", ModelsTable(), true);
             AddSection(stack, "Settings", SettingsTable(), false);
@@ -296,6 +341,34 @@ namespace StepExport.UI
             return t;
         }
 
+        private TableLayoutPanel FormatsTable()
+        {
+            var t = Table();
+            Wide(t, Dim("Every ticked model in:"));
+            Wide(t, Grid(_modelBoxes));
+            _drawingTitle = Dim("The drawing itself in:");
+            Wide(t, _drawingTitle);
+            _drawingGrid = Grid(_drawingBoxes);
+            Wide(t, _drawingGrid);
+            Wide(t, _formatHint);
+            return t;
+        }
+
+        /// <summary>Tick boxes in three columns.</summary>
+        private static TableLayoutPanel Grid(List<(ExportFormat Format, CheckBox Box)> boxes)
+        {
+            var g = new TableLayoutPanel { ColumnCount = 3, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Fill };
+            for (int c = 0; c < 3; c++) g.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3f));
+            g.RowCount = (boxes.Count + 2) / 3;
+            for (int r = 0; r < g.RowCount; r++) g.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            for (int i = 0; i < boxes.Count; i++)
+            {
+                boxes[i].Box.Margin = new Padding(0, 2, 4, 2);
+                g.Controls.Add(boxes[i].Box, i % 3, i / 3);
+            }
+            return g;
+        }
+
         private TableLayoutPanel ModelsTable()
         {
             var t = Table();
@@ -304,7 +377,7 @@ namespace StepExport.UI
             Wide(t, _count);
             var hint = new Label
             {
-                Text = "Each ticked model gets its own STEP file; an assembly is exported whole. Shift click ticks every row from the last clicked one, Ctrl+A ticks all rows (again: unticks).",
+                Text = "Each ticked model gets its own file per format; an assembly is exported whole. Shift click ticks every row from the last clicked one, Ctrl+A ticks all rows (again: unticks).",
                 AutoSize = false, Height = 48, Dock = DockStyle.Fill, Tag = "keep", ForeColor = _theme.Dim
             };
             Wide(t, hint);
@@ -321,11 +394,14 @@ namespace StepExport.UI
             Row(t, "Placeholder", _placeholder);
             Row(t, "Protocol", _protocol);
             Row(t, "Extension", _extension);
+            Row(t, "IFC leave out", _ifcLeaveOut);
+            Row(t, "IFC mesh (mm)", _ifcMesh);
+            Row(t, "IFC property set", _ifcSet);
             Wide(t, _openFolder);
             var hint = new Label
             {
-                Text = "Separator and Date format are for the file name, Folder sep. and Folder date for the folder name. Placeholder: an iProperty value that means \"not filled in yet\" (for example 160100); it is refused. Protocol: AP203, AP214 or AP242.",
-                AutoSize = false, Height = 78, Dock = DockStyle.Fill, Tag = "keep", ForeColor = _theme.Dim
+                Text = "Separator and Date format are for the file name, Folder sep. and Folder date for the folder name. Placeholder: an iProperty value that means \"not filled in yet\" (for example 160100); it is refused. Protocol and Extension: STEP (AP203, AP214 or AP242). IFC leave out: components whose name holds one of these words (comma separated) are not in the IFC. IFC mesh: how close the IFC mesh follows curved faces.",
+                AutoSize = false, Height = 140, Dock = DockStyle.Fill, Tag = "keep", ForeColor = _theme.Dim
             };
             Wide(t, hint);
             return t;
@@ -366,9 +442,9 @@ namespace StepExport.UI
             _reset.Click += (s, e) => ResetFolderClicked?.Invoke();
             Tree.AfterExpand += (s, e) => FitTree();
             Tree.AfterCollapse += (s, e) => FitTree();
-            foreach (FieldBox box in new[] { _separator, _dateFormat, _folderSeparator, _folderDateFormat, _placeholder, _protocol, _extension })
+            foreach (FieldBox box in new[] { _separator, _dateFormat, _folderSeparator, _folderDateFormat, _placeholder, _protocol, _extension, _ifcLeaveOut, _ifcMesh, _ifcSet })
                 box.TextChanged += (s, e) => { if (!_loading) SettingsChanged?.Invoke(); };
-            foreach (CheckBox box in new[] { _addDate, _folderDate, _openFolder })
+            foreach (CheckBox box in new[] { _addDate, _folderDate, _openFolder }.Concat(_modelBoxes.Concat(_drawingBoxes).Select(x => x.Box)))
                 box.CheckedChanged += (s, e) => { if (!_loading) SettingsChanged?.Invoke(); };
             _export.Click += (s, e) => ExportClicked?.Invoke();
             _close.Click += (s, e) => CloseClicked?.Invoke();
@@ -376,7 +452,7 @@ namespace StepExport.UI
 
         private void Browse()
         {
-            using (var dialog = new FolderBrowserDialog { Description = "Folder for the STEP files", UseDescriptionForTitle = true, ShowNewFolderButton = true })
+            using (var dialog = new FolderBrowserDialog { Description = "Folder for the exported files", UseDescriptionForTitle = true, ShowNewFolderButton = true })
             {
                 try { if (System.IO.Directory.Exists(Folder)) dialog.SelectedPath = Folder; } catch { }
                 if (dialog.ShowDialog(FindForm()) == DialogResult.OK)

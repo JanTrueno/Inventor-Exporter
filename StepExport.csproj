@@ -8,7 +8,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <AssemblyName>StepExport</AssemblyName>
     <RootNamespace>StepExport</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>STEP Export for Inventor</Product>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
